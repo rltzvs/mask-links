@@ -2,35 +2,27 @@ package main
 
 import (
 	"fmt"
+	"go_project/linkmasker"
+	"os"
 )
 
-func hideLinks(message string) string {
-	input := []byte(message)
-	var result []byte
-
-	prefix := []byte("http://")
-	prefixLength := len(prefix)
-
-	i := 0
-	for i < len(input) {
-		if i <= len(input)-prefixLength && string(input[i:i+prefixLength]) == string(prefix) {
-			result = append(result, prefix...)
-			i += prefixLength
-
-			for i < len(input) && input[i] != ' ' {
-				result = append(result, '*')
-				i++
-			}
-		} else {
-			result = append(result, input[i])
-			i++
-		}
+func main() {
+	if len(os.Args) < 2 {
+		fmt.Println("Usage: go run main.go <input_file> [output_file]")
+		return
 	}
 
-	return string(result)
-}
+	inputFile := os.Args[1]
+	outputFile := "output.txt"
+	if len(os.Args) >= 3 {
+		outputFile = os.Args[2]
+	}
 
-func main() {
-	message := "Here's my spammy page: http://hehefouls.netHAHAHA see you."
-	fmt.Println(hideLinks(message))
+	prod := linkmasker.NewFileProducer(inputFile)
+	pres := linkmasker.NewFilePresenter(outputFile)
+	svc := linkmasker.NewService(prod, pres)
+
+	if err := svc.Run(); err != nil {
+		fmt.Println("Error:", err)
+	}
 }
