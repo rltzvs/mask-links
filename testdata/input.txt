@@ -1,0 +1,4 @@
+Check out this website: http://example.com for more information.
+Here is another link: http://anotherexample.org which might be useful.
+No links in this line.
+Visit http://yetanotherexample.net for more details.
