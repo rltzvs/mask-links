@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"os"
 	"strings"
+	"sync"
 )
 
 type producer interface {
@@ -13,7 +14,7 @@ type producer interface {
 type presenter interface {
 	present([]string) error
 }
-type LinkMasker struct{
+type LinkMasker struct {
 	prod producer
 	pres presenter
 }
@@ -95,9 +96,37 @@ func (s *LinkMasker) Run() error {
 		return err
 	}
 
-	var maskedMessages []string
+	numWorkers := 10
+	numJobs := len(messages)
+
+	jobs := make(chan string, numJobs)
+	results := make(chan string, numJobs)
+
+	var wg sync.WaitGroup
+
+	for w := 0; w < numWorkers; w++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for message := range jobs {
+				maskedMessage := s.hideLinks(message)
+				results <- maskedMessage
+			}
+		}()
+	}
+
 	for _, msg := range messages {
-		maskedMessages = append(maskedMessages, s.hideLinks(msg))
+		jobs <- msg
+	}
+
+	close(jobs)
+
+	wg.Wait()
+	close(results)
+
+	var maskedMessages []string
+	for res := range results {
+		maskedMessages = append(maskedMessages, res)
 	}
 
 	return s.pres.present(maskedMessages)
